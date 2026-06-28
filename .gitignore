@@ -1,0 +1,10 @@
+.venv/
+data/
+*.csv
+results/
+__pycache__/
+*.pyc
+.cache/
+huggingface/
+mlx-cache/
+.DS_Store
