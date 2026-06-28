@@ -11,7 +11,7 @@ import re
 from unsloth import FastLanguageModel
 
 # ---- Config ----
-MODEL_NAME = "mlx-community/gemma-4-e4b-it-4bit"  # Gemma 4 E4B, 4-bit MLX build
+MODEL_NAME = "mlx-community/gemma-3-4b-it-4bit"  # 4-bit instruction-tuned Gemma 3, MLX build
 MAX_SEQ_LENGTH = 1024
 TEST_FILE = "test.jsonl"
 OUTPUT_FILE = "baseline_results.json"
@@ -91,11 +91,7 @@ def main():
 
         messages = [{"role": "user", "content": prompt}]
         inputs = tokenizer.apply_chat_template(
-            messages,
-            tokenize=True,
-            add_generation_prompt=True,
-            return_tensors="pt",
-            enable_thinking=False,  # we want a direct grid, not a reasoning trace
+            messages, tokenize=True, add_generation_prompt=True, return_tensors="pt"
         )
 
         outputs = model.generate(
