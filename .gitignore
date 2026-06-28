@@ -8,3 +8,4 @@ __pycache__/
 huggingface/
 mlx-cache/
 .DS_Store
+archive.zip
