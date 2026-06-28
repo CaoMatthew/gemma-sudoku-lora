@@ -1,0 +1,2 @@
+# gemma-sudoku-lora
+A reproducible ML pipeline evaluating and fine-tuning a pretrained language model (Gemma) using LoRA on Sudoku solving, with baseline comparison, structured dataset preparation, and accuracy-based evaluation.
