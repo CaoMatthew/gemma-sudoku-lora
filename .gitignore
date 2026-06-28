@@ -9,3 +9,6 @@ huggingface/
 mlx-cache/
 .DS_Store
 archive.zip
+# Derived dataset splits
+train.jsonl
+test.jsonl

@@ -8,10 +8,16 @@ Produces: baseline_results.json
 """
 import json
 import re
-from unsloth import FastLanguageModel
+from mlx_lm import load, generate
+
+try:
+    from mlx_lm.sample_utils import make_sampler
+    _SAMPLER = make_sampler(temp=0.0)
+except ImportError:
+    _SAMPLER = None
 
 # ---- Config ----
-MODEL_NAME = "mlx-community/gemma-3-4b-it-4bit"  # 4-bit instruction-tuned Gemma 3, MLX build
+MODEL_NAME = "mlx-community/gemma-3-text-4b-it-4bit"  # text-only Gemma 3, MLX build
 MAX_SEQ_LENGTH = 1024
 TEST_FILE = "test.jsonl"
 OUTPUT_FILE = "baseline_results.json"
@@ -69,12 +75,7 @@ def grid_from_text(text):
 
 def main():
     print(f"Loading model: {MODEL_NAME} ...")
-    model, tokenizer = FastLanguageModel.from_pretrained(
-        model_name=MODEL_NAME,
-        max_seq_length=MAX_SEQ_LENGTH,
-        load_in_4bit=True,
-    )
-    FastLanguageModel.for_inference(model)  # enables faster inference mode
+    model, tokenizer = load(MODEL_NAME)
 
     test_examples = load_test_set(TEST_FILE)
     print(f"Loaded {len(test_examples)} test examples.")
@@ -90,18 +91,21 @@ def main():
         target_grid = grid_from_text(example["target"])
 
         messages = [{"role": "user", "content": prompt}]
-        inputs = tokenizer.apply_chat_template(
-            messages, tokenize=True, add_generation_prompt=True, return_tensors="pt"
+        model_prompt = tokenizer.apply_chat_template(
+            messages, add_generation_prompt=True
         )
 
-        outputs = model.generate(
-            inputs,
-            max_new_tokens=200,   # 81 digits + commas + newlines fits comfortably
-            temperature=0.1,      # low temp: we want the model's best deterministic guess
-            do_sample=False,
-        )
-        generated_text = tokenizer.decode(
-            outputs[0][inputs.shape[-1]:], skip_special_tokens=True
+        generate_kwargs = dict(max_tokens=200, verbose=False)
+        if _SAMPLER is not None:
+            generate_kwargs["sampler"] = _SAMPLER
+        else:
+            generate_kwargs["temp"] = 0.0  # older mlx_lm API
+
+        generated_text = generate(
+            model,
+            tokenizer,
+            prompt=model_prompt,
+            **generate_kwargs,
         )
 
         predicted_grid = parse_grid_from_output(generated_text)
