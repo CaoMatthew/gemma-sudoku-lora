@@ -7,6 +7,13 @@ rank, alpha, and dropout — rather than delegating all of that to mlx_lm's
 CLI defaults. On Mac, Unsloth dispatches to its FastMLXModel backend
 automatically when it detects an mlx-community checkpoint.
 
+!!!
+This script demonstrates the Unsloth FastLanguageModel API for attaching LoRA
+adapters to the Gemma model through get_peft_model(). It is kept separate from
+the verified MLX-LM training path so that the two implementations do not
+overwrite each other's adapter outputs.
+!!!
+
 What LoRA does:
   Freezes the base model's 4B parameters and inserts small trainable adapter
   matrices (rank-8 here) into the attention projections. Only these adapters
@@ -29,7 +36,6 @@ MAX_SEQ_LEN  = 1024
 LORA_RANK    = 8       # dimensionality of adapter matrices; 8 is a safe default
 LORA_ALPHA   = 16      # scaling factor: alpha/rank = 2.0 effective LR multiplier
 LORA_DROPOUT = 0.0     # no dropout; dataset is clean and training is short
-NUM_LAYERS   = 8       # how many transformer layers (from the end) get adapters
 # ------------------------------------------------------
 
 # ---- Training hyperparameters ----
@@ -77,10 +83,10 @@ def main():
     valid_data = load_jsonl(f"{DATA_DIR}/valid.jsonl")
     print(f"Train: {len(train_data)} examples, Valid: {len(valid_data)} examples")
 
-    # Step 4: Train
-    # Unsloth on Mac dispatches training to its MLX backend. If the
-    # UnslothTrainer is available use it; otherwise fall back to the
-    # mlx_lm.lora subprocess path with equivalent settings.
+    # Step 4: Train with Unsloth
+    # This file is intentionally Unsloth-only. The MLX-LM training path lives
+    # separately in 04b_finetune_mlx_lm.py so the two implementations do not
+    # overwrite each other's outputs or make the results ambiguous.
     try:
         from unsloth import UnslothTrainer, UnslothTrainingArguments
         from datasets import Dataset
@@ -112,33 +118,17 @@ def main():
         print("Starting training via UnslothTrainer...")
         trainer.train()
         model.save_pretrained(ADAPTER_PATH)
+        tokenizer.save_pretrained(ADAPTER_PATH)
         print(f"Adapters saved to {ADAPTER_PATH}/")
 
     except ImportError:
-        # UnslothTrainer not available on this Unsloth/MLX build —
-        # fall back to mlx_lm.lora subprocess with equivalent settings.
-        print("UnslothTrainer not available — falling back to mlx_lm.lora subprocess")
-        import subprocess, sys
-        cmd = [
-            sys.executable, "-m", "mlx_lm", "lora",
-            "--model", MODEL_NAME,
-            "--train",
-            "--data", DATA_DIR,
-            "--adapter-path", ADAPTER_PATH,
-            "--batch-size", str(BATCH_SIZE),
-            "--grad-accumulation-steps", str(GRAD_ACCUM),
-            "--iters", str(ITERS),
-            "--num-layers", str(NUM_LAYERS),
-            "--learning-rate", str(LEARNING_RATE),
-            "--grad-checkpoint",
-            "--mask-prompt",
-            "--save-every", "200",
-            "--val-batches", "25",
-        ]
-        print("Command:", " ".join(cmd))
-        result = subprocess.run(cmd)
-        if result.returncode != 0:
-            print("Training failed. Run `python -m mlx_lm lora --help` to debug.")
+        except ImportError as e:
+            print("\nUnslothTrainer is not available in this environment.")
+            print("This script is intentionally Unsloth-only, so it will not fall back to MLX-LM.")
+            print("Use 04b_finetune_mlx_lm.py for the verified Apple Silicon MLX-LM training path.")
+            print("\nImport error:")
+            print(e)
+            return
 
 
 if __name__ == "__main__":
