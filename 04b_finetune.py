@@ -16,12 +16,12 @@ Run this script with:
     python 04b_finetune.py
 
 Or equivalently, call mlx_lm.lora directly via CLI (same thing):
-    python -m mlx_lm.lora \\
+    python -m mlx_lm lora \\
         --model mlx-community/gemma-3-text-4b-it-4bit \\
         --train \\
         --data lora_data \\
-        --batch-size 1 \\
-        --iters 50 \\
+        --batch-size 2 \\
+        --iters 1000 \\
         --num-layers 8 \\
         --grad-checkpoint \\
         --mask-prompt \\
@@ -36,20 +36,20 @@ MODEL = "mlx-community/gemma-3-text-4b-it-4bit"
 DATA_DIR = "lora_data"
 ADAPTER_PATH = "lora_adapters"
 
-# ---- LoRA hyperparameters (tuned for M3 MacBook Air 24GB) ----
-BATCH_SIZE = 1          # start at 1 for smoke test; increase to 2 if no OOM
-GRAD_ACCUM = 4          # accumulate gradients over 4 steps -> effective batch 4/8
-ITERS = 50              # smoke test: confirm training runs before committing to 1000
+# ---- LoRA hyperparameters tuned for Apple Silicon ----
+BATCH_SIZE = 2          # 3.8GB peak at batch 1 -> batch 2 is safe on 24GB
+GRAD_ACCUM = 4          # accumulate gradients over 4 steps -> effective batch 8
+ITERS = 1000            # first real training run; increase later if metrics improve
+                        # (1000 iters × batch 2 ≈ 2000 examples seen, ~0.4 epochs
+                        # over 4750 train examples — increase to ~2375 for one full pass)
 NUM_LAYERS = 8          # number of transformer layers to attach LoRA adapters to
-                        # (counts from the last layer inward — later layers
-                        # tend to be most task-relevant for structured outputs)
 LEARNING_RATE = 2e-4    # standard LoRA learning rate; safe starting point
 # ---------------------------------------------------------------
 
 
 def main():
     cmd = [
-        sys.executable, "-m", "mlx_lm.lora",
+        sys.executable, "-m", "mlx_lm", "lora",
         "--model", MODEL,
         "--train",
         "--data", DATA_DIR,
@@ -62,7 +62,7 @@ def main():
         "--grad-checkpoint",
         "--mask-prompt",  # only compute loss on the assistant completion (the grid),
                           # not on the puzzle input — this is the part we care about
-        "--save-every", "50", #CHANGE BEFORE ACTUAL RUN!!! save adapters every N iterations (useful for long runs)
+        "--save-every", "200",
         "--val-batches", "25",  # how many validation batches to evaluate per checkpoint
     ]
 
@@ -84,7 +84,7 @@ def main():
         print("\nTraining failed. Common fixes:")
         print("  - OOM error: reduce BATCH_SIZE to 1 in this script")
         print("  - Arg not recognized: your mlx_lm version may differ;")
-        print("    run `python -m mlx_lm.lora --help` to check available args")
+        print("    run `python -m mlx_lm lora --help` to check available args")
 
 
 if __name__ == "__main__":

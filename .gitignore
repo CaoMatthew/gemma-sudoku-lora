@@ -12,3 +12,6 @@ archive.zip
 # Derived dataset splits
 train.jsonl
 test.jsonl
+# Generated LoRA training artifacts
+lora_data/
+lora_adapters/
