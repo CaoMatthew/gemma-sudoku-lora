@@ -19,24 +19,7 @@ Compare baseline, MLX-LM LoRA, and Unsloth LoRA results
 The main goal is a fair comparison: every model is evaluated on the same test.jsonl file using the same parser and scoring metrics.
 
 Project Structure
-.
-├── 01_prepare_data.py
-├── 03_baseline_eval.py
-├── 04a_convert_data.py
-├── 04b_finetune_mlx_lm.py
-├── 04c_finetune_unsloth.py
-├── 04c_test_unsloth_mac.py
-├── 05_eval_finetuned.py
-├── 05b_unsloth_eval.py
-├── README.md
-├── sudoku.csv
-├── train.jsonl
-├── test.jsonl
-├── lora_data/
-│   ├── train.jsonl
-│   └── valid.jsonl
-├── finetuned_results.json
-└── unsloth_results.json
+
 Data Preparation
 
 Start with a sudoku.csv file containing two columns:
