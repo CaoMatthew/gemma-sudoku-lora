@@ -17,3 +17,6 @@ lora_data/
 lora_adapters/
 mlx_lm_lora_adapters/
 unsloth_lora_adapters/
+# Model adapters / checkpoints
+unsloth_adapters/
+unsloth_mlx_smoke_adapters/
